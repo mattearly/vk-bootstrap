@@ -209,12 +209,22 @@ enum class SwapchainError {
 	failed_create_swapchain_image_views,
 	required_min_image_count_too_low,
 };
+enum class PipelineLayoutError {
+	device_handle_not_provided,
+	failed_to_create_pipeline_layout,
+};
+enum class GraphicsPipelineError {
+	device_handle_not_provided,
+	failed_to_create_graphics_pipeline,
+};
 
 std::error_code make_error_code(InstanceError instance_error);
 std::error_code make_error_code(PhysicalDeviceError physical_device_error);
 std::error_code make_error_code(QueueError queue_error);
 std::error_code make_error_code(DeviceError device_error);
 std::error_code make_error_code(SwapchainError swapchain_error);
+std::error_code make_error_code(PipelineLayoutError pipeline_layout_error);
+std::error_code make_error_code(GraphicsPipelineError graphics_pipeline_error);
 
 const char* to_string_message_severity(VkDebugUtilsMessageSeverityFlagBitsEXT s);
 const char* to_string_message_type(VkDebugUtilsMessageTypeFlagsEXT s);
@@ -224,6 +234,8 @@ const char* to_string(PhysicalDeviceError err);
 const char* to_string(QueueError err);
 const char* to_string(DeviceError err);
 const char* to_string(SwapchainError err);
+const char* to_string(PipelineLayoutError err);
+const char* to_string(GraphicsPipelineError err);
 
 // Gathers useful information about the available vulkan capabilities, like layers and instance
 // extensions. Use this for enabling features conditionally, ie if you would like an extension but
@@ -354,11 +366,11 @@ class InstanceBuilder {
 
 	// Prefer a vulkan instance API version. If the desired version isn't available, it will use the
 	// highest version available. Should be constructed with VK_MAKE_VERSION or VK_MAKE_API_VERSION.
-	[[deprecated("Use require_api_version + set_minimum_instance_version instead.")]]
-	InstanceBuilder& desire_api_version(uint32_t preferred_vulkan_version);
+	[[deprecated("Use require_api_version + set_minimum_instance_version instead.")]] InstanceBuilder&
+	desire_api_version(uint32_t preferred_vulkan_version);
 	// Prefer a vulkan instance API version. If the desired version isn't available, it will use the highest version available.
-	[[deprecated("Use require_api_version + set_minimum_instance_version instead.")]]
-	InstanceBuilder& desire_api_version(uint32_t major, uint32_t minor, uint32_t patch = 0);
+	[[deprecated("Use require_api_version + set_minimum_instance_version instead.")]] InstanceBuilder&
+	desire_api_version(uint32_t major, uint32_t minor, uint32_t patch = 0);
 
 	// Adds a layer to be enabled. Will fail to create an instance if the layer isn't available.
 	InstanceBuilder& enable_layer(const char* layer_name);
@@ -576,8 +588,8 @@ class PhysicalDeviceSelector {
 	PhysicalDeviceSelector& add_desired_extensions(std::vector<const char*> extensions);
 
 	// Prefer a physical device that supports a (major, minor) version of vulkan.
-	[[deprecated("Use set_minimum_version + InstanceBuilder::require_api_version.")]]
-	PhysicalDeviceSelector& set_desired_version(uint32_t major, uint32_t minor);
+	[[deprecated("Use set_minimum_version + InstanceBuilder::require_api_version.")]] PhysicalDeviceSelector&
+	set_desired_version(uint32_t major, uint32_t minor);
 	// Require a physical device that supports a (major, minor) version of vulkan.
 	PhysicalDeviceSelector& set_minimum_version(uint32_t major, uint32_t minor);
 
@@ -755,7 +767,8 @@ struct Swapchain {
 	VkFormat image_format = VK_FORMAT_UNDEFINED; // The image format actually used when creating the swapchain.
 	VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; // The color space actually used when creating the swapchain.
 	VkExtent2D extent = { 0, 0 };
-	uint32_t requested_min_image_count = 0; // The value of minImageCount actually used when creating the swapchain; note that the presentation engine is always free to create more images than that.
+	uint32_t requested_min_image_count =
+	    0; // The value of minImageCount actually used when creating the swapchain; note that the presentation engine is always free to create more images than that.
 	VkPresentModeKHR present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR; // The present mode actually used when creating the swapchain.
 	VkAllocationCallbacks* allocation_callbacks = VK_NULL_HANDLE;
 
@@ -922,8 +935,7 @@ class SwapchainBuilder {
 	} info;
 };
 
-} // namespace vkb
-
+}; // namespace vkb
 
 namespace std {
 template <> struct is_error_code_enum<vkb::InstanceError> : true_type {};
@@ -931,4 +943,6 @@ template <> struct is_error_code_enum<vkb::PhysicalDeviceError> : true_type {};
 template <> struct is_error_code_enum<vkb::QueueError> : true_type {};
 template <> struct is_error_code_enum<vkb::DeviceError> : true_type {};
 template <> struct is_error_code_enum<vkb::SwapchainError> : true_type {};
+template <> struct is_error_code_enum<vkb::PipelineLayoutError> : true_type {};
+template <> struct is_error_code_enum<vkb::GraphicsPipelineError> : true_type {};
 } // namespace std
